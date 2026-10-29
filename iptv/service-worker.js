@@ -1,5 +1,5 @@
-/* IPTV Player Service Worker：应用外壳离线缓存 */
-const CACHE = 'iptv-shell-v1';
+/* IPTV Player Service Worker：应用外壳离线缓存（网络优先，失败回退缓存） */
+const CACHE = 'iptv-shell-v2';
 const ASSETS = [
   './',
   './index.html',
@@ -50,15 +50,14 @@ self.addEventListener('fetch', (event) => {
   }
 
   event.respondWith(
-    caches.match(req).then((hit) =>
-      hit ||
-      fetch(req).then((res) => {
+    fetch(req)
+      .then((res) => {
         if (res.ok) {
           const copy = res.clone();
           caches.open(CACHE).then((c) => c.put(req, copy));
         }
         return res;
       })
-    )
+      .catch(() => caches.match(req))
   );
 });
