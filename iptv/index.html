@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>IPTV Player</title>
+  <meta name="description" content="播放 M3U8 流媒体列表的 PWA 应用，支持在线 URL / 本地文件 / 剪贴板导入，播放列表保存在本地。">
+  <meta name="theme-color" content="#0b0e14">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="icons/icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="icons/icon-192.png">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <img src="icons/icon.svg" alt="" width="28" height="28">
+      <span>IPTV Player</span>
+    </div>
+    <div class="topbar-actions">
+      <select id="playlistSelect" class="playlist-select" title="切换播放列表"></select>
+      <button id="btnManage" class="btn ghost" title="管理播放列表">管理</button>
+      <button id="btnAdd" class="btn primary">＋ 添加</button>
+      <button id="btnInstall" class="btn ghost hidden" title="安装应用">安装</button>
+    </div>
+  </header>
+
+  <div class="layout">
+    <aside class="sidebar">
+      <div class="sidebar-title">分组</div>
+      <div id="groupList" class="group-list"></div>
+    </aside>
+
+    <main class="content">
+      <div class="toolbar">
+        <input id="searchInput" class="search" type="search" placeholder="搜索频道…">
+        <span id="channelCount" class="count-badge"></span>
+      </div>
+
+      <div id="playerBanner" class="player-banner hidden">
+        <div class="player-banner-info">
+          <span class="dot"></span>
+          <span>正在播放：</span>
+          <strong id="bannerName"></strong>
+        </div>
+        <div class="player-banner-actions">
+          <button id="bannerOpen" class="btn small">打开播放器</button>
+          <button id="bannerStop" class="btn ghost small">停止</button>
+        </div>
+      </div>
+
+      <div id="channelGrid" class="channel-grid"></div>
+
+      <div id="emptyState" class="empty hidden">
+        <div class="empty-icon">📺</div>
+        <p>还没有播放列表</p>
+        <p class="empty-sub">点击右上角「＋ 添加」，支持在线 URL / 本地文件 / 剪贴板粘贴三种方式</p>
+        <button id="emptyAdd" class="btn primary">添加播放列表</button>
+      </div>
+    </main>
+  </div>
+
+  <!-- 播放器 -->
+  <div id="playerOverlay" class="overlay hidden">
+    <div class="player-shell">
+      <div class="player-header">
+        <div class="player-title">
+          <img id="playerLogo" class="player-logo" alt="">
+          <div class="player-title-text">
+            <div id="playerName" class="player-name"></div>
+            <div id="playerMeta" class="player-meta"></div>
+          </div>
+        </div>
+        <div class="player-controls">
+          <button id="btnPrev" class="btn ghost" title="上一个频道">⏮ 上一个</button>
+          <button id="btnNext" class="btn ghost" title="下一个频道">下一个 ⏭</button>
+          <button id="btnMinimize" class="btn ghost" title="收起（继续播放）">—</button>
+          <button id="btnClosePlayer" class="btn ghost" title="停止并关闭">✕</button>
+        </div>
+      </div>
+      <div class="video-wrap">
+        <video id="video" controls autoplay playsinline></video>
+        <div id="playerError" class="player-error hidden"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 添加播放列表 -->
+  <div id="addModal" class="modal hidden">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h2>添加播放列表</h2>
+        <button class="modal-close" data-close="addModal">✕</button>
+      </div>
+      <div class="tabs">
+        <button class="tab active" data-tab="url">在线 URL</button>
+        <button class="tab" data-tab="file">本地文件</button>
+        <button class="tab" data-tab="paste">剪贴板粘贴</button>
+      </div>
+      <div class="tab-panel" data-panel="url">
+        <label>播放列表地址（M3U / M3U8）</label>
+        <input id="urlInput" type="url" placeholder="https://example.com/playlist.m3u">
+        <div class="hint">若目标地址不支持 CORS，会自动尝试公共代理获取</div>
+      </div>
+      <div class="tab-panel hidden" data-panel="file">
+        <label>选择本地文件（.m3u / .m3u8 / .txt）</label>
+        <input id="fileInput" type="file" accept=".m3u,.m3u8,.txt,audio/x-mpegurl,application/x-mpegurl">
+      </div>
+      <div class="tab-panel hidden" data-panel="paste">
+        <label>粘贴播放列表内容</label>
+        <textarea id="pasteInput" rows="8" placeholder="#EXTM3U&#10;#EXTINF:-1,频道名称&#10;http://…/index.m3u8"></textarea>
+        <button id="btnReadClipboard" class="btn ghost small-btn">从剪贴板读取</button>
+      </div>
+      <label class="opt-name-label">播放列表名称（可选）</label>
+      <input id="nameInput" type="text" placeholder="默认自动读取列表内的 #PLAYLIST 名称">
+      <div class="modal-footer">
+        <span id="addStatus" class="add-status"></span>
+        <button id="btnConfirmAdd" class="btn primary">添加</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 管理播放列表 -->
+  <div id="manageModal" class="modal hidden">
+    <div class="modal-card wide">
+      <div class="modal-header">
+        <h2>管理播放列表</h2>
+        <button class="modal-close" data-close="manageModal">✕</button>
+      </div>
+      <div id="manageList" class="manage-list"></div>
+      <div class="hint manage-hint">播放列表仅保存在本机浏览器的 Local Storage 中，不涉及任何账号。</div>
+    </div>
+  </div>
+
+  <div id="toastWrap" class="toast-wrap"></div>
+
+  <script src="vendor/hls.min.js"></script>
+  <script type="module" src="js/app.js"></script>
+</body>
+</html>
