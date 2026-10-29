@@ -9,6 +9,7 @@ let currentTab = 'url';
 let current = { playlistId: null, index: -1 }; // 正在播放
 let hls = null;
 let mediaRecoverTried = false;
+let currentStreamUrl = '';
 let deferredPrompt = null;
 
 const $ = (s) => document.querySelector(s);
@@ -229,9 +230,8 @@ function destroyHls() {
 }
 
 function showPlayerError(msg) {
-  const el = $('#playerError');
-  el.textContent = msg;
-  el.classList.remove('hidden');
+  $('#playerErrorMsg').textContent = msg;
+  $('#playerError').classList.remove('hidden');
 }
 function hidePlayerError() {
   $('#playerError').classList.add('hidden');
@@ -239,6 +239,7 @@ function hidePlayerError() {
 
 function startPlayback(url) {
   const video = $('#video');
+  currentStreamUrl = url;
   destroyHls();
   hidePlayerError();
   video.pause();
@@ -537,6 +538,9 @@ function bindEvents() {
   $('#btnClosePlayer').onclick = stopPlayback;
   $('#bannerOpen').onclick = () => { $('#playerOverlay').classList.remove('hidden'); updateBanner(); };
   $('#bannerStop').onclick = stopPlayback;
+  $('#btnOpenStreamTab').onclick = () => {
+    if (currentStreamUrl) window.open(currentStreamUrl, '_blank', 'noopener');
+  };
   $('#video').addEventListener('error', () => {
     const video = $('#video');
     if (video.src && !hls) {

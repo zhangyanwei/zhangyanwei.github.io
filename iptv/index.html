@@ -83,7 +83,13 @@
       </div>
       <div class="video-wrap">
         <video id="video" controls autoplay playsinline></video>
-        <div id="playerError" class="player-error hidden"></div>
+        <div id="playerError" class="player-error hidden">
+          <div class="player-error-box">
+            <div id="playerErrorMsg"></div>
+            <button id="btnOpenStreamTab" class="btn primary">在新标签页打开流地址</button>
+            <div class="player-error-hint">新标签页打开不受 CORS 限制：Safari / iOS 可直接播放；Chrome / Edge 无法原生播放 m3u8（会下载文件）。HTTP 流在 HTTPS 页面下无法播放属浏览器安全限制。</div>
+          </div>
+        </div>
       </div>
     </div>
   </div>
